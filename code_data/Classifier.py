@@ -25,7 +25,7 @@ class LSTMClassifier(nn.Module):
 		self.proxlstm = pro.ProximalLSTMCell(self.lstm)
 		self.linear = nn.Linear(self.hidden_size, self.output_size)
 
-	def forward(self, input, r, batch_size, mode='plain'):
+	def forward(self, input, r, batch_size, mode='plain', epsilon=None):
 		# do the forward pass
 		# pay attention to the order of input dimension.
 		# input now is of dimension: batch_size * sequence_length * input_size
@@ -68,9 +68,13 @@ class LSTMClassifier(nn.Module):
 			out = self.conv(out)
 			out = self.relu(out)
 			out = torch.permute(out, (2, 0, 1))  # prox lstm need L x N x C
+			out_pert = out + r
 			hx, cx = torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size)
 			for i in range(out.size(0)):  # loop through L
-				hx, cx = self.proxlstm(out[i], hx, cx)
+				_, sx = self.proxlstm(out[i], hx, cx)
+				hx, sx_pert = self.proxlstm(out_pert[i], hx, cx)
+				G_t =  (sx - sx_pert)/r
+				hx, cx = torch.matmul(torch.inverse(torch.eye(n=len(G_t)) + torch.multiply(epsilon, torch.matmul(G_t, G_t.T))), sx)
 			out = hx  # last time step
 			out = self.linear(out)
 			return out
