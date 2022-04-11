@@ -21,16 +21,16 @@ def load_data(filename, batch_size):
 
     train_itr = []
 
-    for i in range(0,num_train, batch_size):
-        if (i+batch_size)>num_train:
+    for i in range(0, num_train, batch_size):
+        if (i+batch_size) > num_train:
             current_data = train_data[i:num_train]
             current_label = train_label[i:num_train]
         else:
             current_data = train_data[i:i+batch_size]
             current_label = train_label[i:i+batch_size]
-        data_length =[len(sample) for sample in current_data]
+        data_length = [len(sample) for sample in current_data]
         pad_data = np.zeros((len(data_length), max(data_length), input_size))
-        for i , sample_len in enumerate(data_length):
+        for i, sample_len in enumerate(data_length):
             sample = current_data[i]
 
             pad_data[i, 0:sample_len, :] = sample
@@ -45,7 +45,7 @@ def load_data(filename, batch_size):
     test_itr = []
 
     for i in range(0,num_test, batch_size):
-        if (i+batch_size)>num_test:
+        if (i+batch_size) > num_test:
             current_data = test_data[i:num_test]
             current_label = test_label[i:num_test]
         else:
