@@ -2,7 +2,6 @@
 import load_data
 import torch
 import torch.nn.functional as F
-from torch.autograd import grad
 import torch.optim as optim
 from Classifier import LSTMClassifier
 
@@ -46,6 +45,9 @@ def train_model(model, train_iter, mode):
             perturb_prediction = model(input, r=compute_perturbation(loss, model),
                                        batch_size=input.size()[0], epsilon=epsilons[2], mode=mode)
             loss = loss + loss_fn(perturb_prediction, target)
+        # if mode == 'ProxLSTM':
+        #     model(input, r=compute_perturbation(loss, model),
+        #           batch_size=input.size()[0], epsilon=epsilons[2], mode=mode)
         num_corrects = (torch.max(prediction, 1)[1].view(target.size()).data == target.data).float().sum()
         acc = 100.0 * num_corrects/(input.size()[0])
         loss.backward()
@@ -87,11 +89,11 @@ def compute_perturbation(loss, model):
 
 ''' Training basic model '''
 
-train_iter, test_iter = load_data.load_data('JV_data.mat', batch_size)
-
+train_iter, test_iter = load_data.load_data('/home/t/stash/Coursework/Spring_22/512/Lab/3/Advesarial-Sequence-Classification/code_data/JV_data.mat', batch_size)
+#
 model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
 loss_fn = F.cross_entropy
-
+#
 # for epoch in range(basic_epoch):
 #     optim = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-3)
 #     train_loss, train_acc = train_model(model, train_iter, mode='plain')
@@ -107,8 +109,9 @@ loss_fn = F.cross_entropy
 # torch.save(model.state_dict(), '../basic_model.pt')
 #
 # 2. load the saved model to Prox_model, which is an instance of LSTMClassifier
+print("Loading saved model")
 Prox_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
-Prox_model.load_state_dict(torch.load('../basic_model.pt'))
+Prox_model.load_state_dict(torch.load('/home/t/stash/Coursework/Spring_22/512/Lab/3/Advesarial-Sequence-Classification/basic_model.pt'))
 
 # 3. load the saved model to Adv_model, which is an instance of LSTMClassifier
 # Adv_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
@@ -117,7 +120,7 @@ Prox_model.load_state_dict(torch.load('../basic_model.pt'))
 
 # ''' Training Prox_model'''
 for epoch in range(Prox_epoch):
-    optim = torch.optim.Adam(filter(lambda p: p.requires_grad, Prox_model.parameters()), lr=1e-3, weight_decay=1e-3)
+    optim = torch.optim.Adam(filter(lambda p: p.requires_grad, Prox_model.parameters()), lr=3e-4, weight_decay=1e-3)
     train_loss, train_acc = train_model(Prox_model, train_iter, mode='ProxLSTM')
     val_loss, val_acc = eval_model(Prox_model, test_iter, mode='ProxLSTM')
     print(f'Epoch: {epoch+1:02}, '
