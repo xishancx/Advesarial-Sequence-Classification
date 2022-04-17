@@ -45,6 +45,9 @@ def train_model(model, train_iter, mode):
             perturb_prediction = model(input, r=compute_perturbation(loss, model),
                                        batch_size=input.size()[0], epsilon=epsilons[2], mode=mode)
             loss = loss + loss_fn(perturb_prediction, target)
+        # if mode == 'ProxLSTM':
+        #     model(input, r=compute_perturbation(loss, model),
+        #           batch_size=input.size()[0], epsilon=epsilons[2], mode=mode)
         num_corrects = (torch.max(prediction, 1)[1].view(target.size()).data == target.data).float().sum()
         acc = 100.0 * num_corrects/(input.size()[0])
         loss.backward()
@@ -107,7 +110,7 @@ loss_fn = F.cross_entropy
 #
 # 2. load the saved model to Prox_model, which is an instance of LSTMClassifier
 Prox_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
-# Prox_model.load_state_dict(torch.load('/home/t/stash/Coursework/Spring_22/512/Lab/3/Advesarial-Sequence-Classification/basic_model.pt'))
+Prox_model.load_state_dict(torch.load('/home/t/stash/Coursework/Spring_22/512/Lab/3/Advesarial-Sequence-Classification/basic_model.pt'))
 
 # 3. load the saved model to Adv_model, which is an instance of LSTMClassifier
 # Adv_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
@@ -116,7 +119,7 @@ Prox_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
 
 # ''' Training Prox_model'''
 for epoch in range(Prox_epoch):
-    optim = torch.optim.Adam(filter(lambda p: p.requires_grad, Prox_model.parameters()), lr=1e-3, weight_decay=1e-3)
+    optim = torch.optim.Adam(filter(lambda p: p.requires_grad, Prox_model.parameters()), lr=3e-4, weight_decay=1e-3)
     train_loss, train_acc = train_model(Prox_model, train_iter, mode='ProxLSTM')
     val_loss, val_acc = eval_model(Prox_model, test_iter, mode='ProxLSTM')
     print(f'Epoch: {epoch+1:02}, '

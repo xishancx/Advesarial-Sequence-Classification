@@ -1,67 +1,45 @@
+
 import torch
 import torch.nn as nn
+import torch.autograd as ag
+
+from torch.autograd import Variable
+from torch.nn import functional as F
 
 
-class ProximalLSTMCell(nn.Module):
+class ProxLSTMCell(ag.Function):
 
-    def __init__(self, lstm):
-        super(ProximalLSTMCell, self).__init__()
-        self.lstm = lstm
-        self.grad_list = []
+    @staticmethod
+    def forward(ctx, h_t, s_t, G_t, prox_epsilon=1):
+        # s_t = s_t.unsqueeze(2)
+        # G_t_transpose = torch.transpose(G_t, 1, 2)
+        mul = torch.matmul(G_t, G_t.T)
+        one_eye = torch.eye(mul.shape[-1])
+        one_eye = one_eye.reshape((one_eye.shape[0], one_eye.shape[0]))
+        # one_eye = one_eye.repeat(h_t.shape[0], 1, 1)
+        inv = torch.inverse(one_eye + prox_epsilon*mul)
+        # print(inv.shape, s_t.shape)
+        c_t = (s_t.T @ inv).T
+        # c_t = c_t.squeeze()
+        # print(c_t.shape, one_eye.shape)
+        ctx.save_for_backward(h_t, c_t, G_t, inv)
 
-    # def reset(lstm: nn.LSTMCell):
-    #     ProximalLSTMCell.lstm = lstm
-    #     ProximalLSTMCell.grad_list = []
+        return (h_t, c_t)
 
-    def forward(self, x, pre_h, pre_c, epsilon):
-        x = torch.tensor(x.clone().detach(), requires_grad=True)
-        pre_h = torch.tensor(pre_h.clone().detach(), requires_grad=True)
-        pre_c = torch.tensor(pre_c.clone().detach(), requires_grad=True)
 
-        _, s = self.lstm(x, (pre_h, pre_c))
-        print(s)
-        s.backward()
-        grad_Wh = [p.grad.clone().detach() for p in self.lstm.parameters()]
-        ds_dpre_h = pre_h.grad.clone().detach()
-        ds_dpre_c = pre_c.grad.clone().detach()
-        G = x.grad.clone().detach()
+    @staticmethod
+    def backward(ctx, grad_h, grad_c):
+        h_t, c_t, G_t, inv = ctx.saved_tensors
 
-        print(G.size(), s.size())
-        post_c = torch.inverse(torch.ones(s.size()) + epsilon * torch.matmul(G, G.T)) * s
-        print(post_c.size())
+        # print(inv.shape, grad_c.shape, grad_h.shape)
 
-        post_h, _ = self.lstm(x, (pre_h, pre_c))
-        post_h.backward()
-        grad_Wc = [p.grad.clone().detach() for p in ProximalLSTMCell.lstm.parameters()]
-        dh_dpre_h = pre_h.grad.clone().detach()
-        dh_dpre_c = pre_c.grad.clone().detach()
+        a = (grad_c.T @ inv).T  # torch.matmul
 
-        # this part is missing a term because I am not sure what gradient f(c) is
-        a = torch.inverse(torch.ones(s.size()) + epsilon * torch.matmul(G, G.T))
-        grad_s = a
-        grad_G = -(a * post_c.T + post_c * a.T) * G
+        grad_g1 = torch.matmul(a, c_t.T)
+        grad_g2 = torch.matmul(c_t, a.T)
 
-        Frobenius_product = grad_G * G
-        Frobenius_product.backward()
-        dL_dG_dpre_c = pre_c.grad.clone().detach()
-        dL_dG_dpre_h = pre_h.grad.clone().detach()
+        grad_g = -torch.matmul(grad_g1 + grad_g2, G_t)
+        grad_s = (grad_c.T @ inv).T
 
-        self.grad_list.append((grad_Wh, ds_dpre_h, ds_dpre_c,
-                                           grad_Wc, dh_dpre_h, dh_dpre_c,
-                                           grad_s, dL_dG_dpre_c, dL_dG_dpre_h))
 
-        return post_h, post_c
-
-    def backward(self, grad_h, grad_c):
-        grad_Wh, ds_dpre_h, ds_dpre_c, \
-        grad_Wc, dh_dpre_h, dh_dpre_c, \
-        grad_s, dL_dG_dpre_c, dL_dG_dpre_h = self.grad_list.pop(-1)
-
-        for i, p in enumerate(self.lstm.parameters()):
-            p.grad += (grad_h * grad_Wh[i] + grad_c * grad_Wc[i])
-
-        grad_pre_h = grad_h * dh_dpre_h + dL_dG_dpre_h + grad_s * ds_dpre_h
-        grad_pre_c = grad_h * dh_dpre_c + dL_dG_dpre_c + grad_s * ds_dpre_c
-
-        return grad_pre_h, grad_pre_c
-
+        return grad_h, grad_s, grad_g, None

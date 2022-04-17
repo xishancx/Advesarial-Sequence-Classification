@@ -3,7 +3,9 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.nn import functional as F
-from ProxLSTM import ProximalLSTMCell
+# from ProxLSTM import ProximalLSTMCell
+import ProxLSTM as pro
+import torch.autograd as ag
 
 
 class LSTMClassifier(nn.Module):
@@ -22,11 +24,10 @@ class LSTMClassifier(nn.Module):
 		)
 		self.relu = nn.ReLU()
 		self.lstm = nn.LSTMCell(64, hidden_size)
-		self.prox_lstm = ProximalLSTMCell(self.lstm)
-		# pro.ProximalLSTMCell.reset(self.lstm)
+		# self.prox_lstm = ProximalLSTMCell(self.lstm)
 		self.linear = nn.Linear(self.hidden_size, self.output_size)
 
-	def forward(self, input, r, batch_size, epsilon=0, mode='plain'):
+	def forward(self, input, r, batch_size, epsilon=5, mode='plain'):
 		# do the forward pass
 		# pay attention to the order of input dimension.
 		# input now is of dimension: batch_size * sequence_length * input_size
@@ -62,16 +63,27 @@ class LSTMClassifier(nn.Module):
 			out = self.linear(out)
 			return out
 
-		if mode == 'ProxLSTM':  # epsilon is lambda^(-1) * delta^2
-			# chain up layers, but use ProximalLSTMCell here
-			out = self.normalize(input)  # N x L x C
-			out = out.permute((0, 2, 1))  # conv1d need N x C x L
-			out = self.conv(out)
-			out = self.relu(out)
-			out = out.permute((2, 0, 1))  # prox lstm need L x N x C
-			hx, cx = torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size)
-			for i in range(out.size(0)):  # loop through L
-				hx, cx = self.prox_lstm(out[i], hx, cx, epsilon)
-			out = hx  # last time step
-			out = self.linear(out)
+		if mode == 'ProxLSTM':
+			prox = pro.ProxLSTMCell.apply
+			out = F.normalize(input)
+			# # Dropout layer
+			# if self.apply_dropout:
+			#     normalized = self.dropout(normalized)
+			out = self.conv(out.permute(0, 2, 1)).permute(2, 0, 1)
+
+			with torch.enable_grad():
+				self.v = self.relu(out).requires_grad_(True)
+				# # Batch Norm layer
+				# if self.apply_batch_norm:
+				#     self.lstm_input = self.batch_norm(self.lstm_input.permute(0, 2, 1))
+				#     self.lstm_input = self.lstm_input.permute(0, 2, 1)
+				self.h_t = torch.zeros(self.v.shape[1], self.hidden_size)  # h_0
+				self.c_t = torch.zeros(self.v.shape[1], self.hidden_size)  # c_0
+				for v_t in self.v:
+					self.h_t, self.s_t = self.lstm(v_t, (self.h_t, self.c_t))
+					self.G_t = torch.zeros(v_t.shape[0], self.lstm.hidden_size, self.lstm.input_size)
+					# for i in range(self.s_t.size(-1)):
+					self.G_t = ag.grad(self.s_t, v_t, grad_outputs=torch.ones_like(self.s_t), create_graph=True, retain_graph=True)[0]
+					self.h_t, self.c_t = prox(self.h_t, self.s_t, self.G_t, epsilon)
+			out = self.linear(self.h_t)
 			return out
