@@ -2,7 +2,6 @@
 import load_data
 import torch
 import torch.nn.functional as F
-from torch.autograd import grad
 import torch.optim as optim
 from Classifier import LSTMClassifier
 
@@ -87,7 +86,7 @@ def compute_perturbation(loss, model):
 
 ''' Training basic model '''
 
-train_iter, test_iter = load_data.load_data('JV_data.mat', batch_size)
+train_iter, test_iter = load_data.load_data('/home/t/stash/Coursework/Spring_22/512/Lab/3/Advesarial-Sequence-Classification/code_data/JV_data.mat', batch_size)
 
 model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
 loss_fn = F.cross_entropy
@@ -108,7 +107,7 @@ loss_fn = F.cross_entropy
 #
 # 2. load the saved model to Prox_model, which is an instance of LSTMClassifier
 Prox_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
-Prox_model.load_state_dict(torch.load('../basic_model.pt'))
+# Prox_model.load_state_dict(torch.load('/home/t/stash/Coursework/Spring_22/512/Lab/3/Advesarial-Sequence-Classification/basic_model.pt'))
 
 # 3. load the saved model to Adv_model, which is an instance of LSTMClassifier
 # Adv_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)

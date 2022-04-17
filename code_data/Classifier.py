@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.nn import functional as F
-import ProxLSTM as pro
+from ProxLSTM import ProximalLSTMCell
 
 
 class LSTMClassifier(nn.Module):
@@ -22,7 +22,8 @@ class LSTMClassifier(nn.Module):
 		)
 		self.relu = nn.ReLU()
 		self.lstm = nn.LSTMCell(64, hidden_size)
-		pro.ProximalLSTMCell.reset(self.lstm)
+		self.prox_lstm = ProximalLSTMCell(self.lstm)
+		# pro.ProximalLSTMCell.reset(self.lstm)
 		self.linear = nn.Linear(self.hidden_size, self.output_size)
 
 	def forward(self, input, r, batch_size, epsilon=0, mode='plain'):
@@ -33,10 +34,10 @@ class LSTMClassifier(nn.Module):
 		if mode == 'plain':  # epsilon is 0
 			# chain up the layers
 			out = self.normalize(input)  # N x L x C
-			out = torch.permute(out, (0, 2, 1))  # conv1d need N x C x L
+			out = out.permute((0, 2, 1))  # conv1d need N x C x L
 			out = self.conv(out)
 			out = self.relu(out)
-			out = torch.permute(out, (2, 0, 1))  # lstm need L x N x C
+			out = out.permute((2, 0, 1))  # lstm need L x N x C
 			hx, cx = torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size)
 			for i in range(out.size(0)):  # loop through L
 				hx, cx = self.lstm(out[i], (hx, cx))
@@ -49,7 +50,7 @@ class LSTMClassifier(nn.Module):
 			# different from mode='plain', you need to add r to the forward pass
 			# also make sure that the chain allows computing the gradient with respect to the input of LSTM
 			out = self.normalize(input)  # N x L x C
-			out = torch.permute(out, (0, 2, 1))  # N x C x L
+			out = out.permute((0, 2, 1))  # N x C x L
 			out = self.conv(out)
 			out = self.relu(out)
 			self.v = torch.tensor(torch.permute(out, (2, 0, 1)), requires_grad=True)  # save the input to the lstm layer
@@ -64,13 +65,13 @@ class LSTMClassifier(nn.Module):
 		if mode == 'ProxLSTM':  # epsilon is lambda^(-1) * delta^2
 			# chain up layers, but use ProximalLSTMCell here
 			out = self.normalize(input)  # N x L x C
-			out = torch.permute(out, (0, 2, 1))  # conv1d need N x C x L
+			out = out.permute((0, 2, 1))  # conv1d need N x C x L
 			out = self.conv(out)
 			out = self.relu(out)
-			out = torch.permute(out, (2, 0, 1))  # prox lstm need L x N x C
+			out = out.permute((2, 0, 1))  # prox lstm need L x N x C
 			hx, cx = torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size)
 			for i in range(out.size(0)):  # loop through L
-				hx, cx = pro.ProximalLSTMCell.apply(out[i], hx, cx, epsilon)
+				hx, cx = self.prox_lstm(out[i], hx, cx, epsilon)
 			out = hx  # last time step
 			out = self.linear(out)
 			return out
