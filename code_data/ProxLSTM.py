@@ -11,17 +11,11 @@ class ProxLSTMCell(ag.Function):
 
     @staticmethod
     def forward(ctx, h_t, s_t, G_t, prox_epsilon=1):
-        # s_t = s_t.unsqueeze(2)
-        # G_t_transpose = torch.transpose(G_t, 1, 2)
         mul = torch.matmul(G_t, G_t.T)
         one_eye = torch.eye(mul.shape[-1])
         one_eye = one_eye.reshape((one_eye.shape[0], one_eye.shape[0]))
-        # one_eye = one_eye.repeat(h_t.shape[0], 1, 1)
         inv = torch.inverse(one_eye + prox_epsilon*mul)
-        # print(inv.shape, s_t.shape)
         c_t = (s_t.T @ inv).T
-        # c_t = c_t.squeeze()
-        # print(c_t.shape, one_eye.shape)
         ctx.save_for_backward(h_t, c_t, G_t, inv)
 
         return (h_t, c_t)
@@ -30,8 +24,6 @@ class ProxLSTMCell(ag.Function):
     @staticmethod
     def backward(ctx, grad_h, grad_c):
         h_t, c_t, G_t, inv = ctx.saved_tensors
-
-        # print(inv.shape, grad_c.shape, grad_h.shape)
 
         a = (grad_c.T @ inv).T  # torch.matmul
 
