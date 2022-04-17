@@ -90,10 +90,10 @@ def compute_perturbation(loss, model):
 ''' Training basic model '''
 
 train_iter, test_iter = load_data.load_data('/home/t/stash/Coursework/Spring_22/512/Lab/3/Advesarial-Sequence-Classification/code_data/JV_data.mat', batch_size)
-
+#
 model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
 loss_fn = F.cross_entropy
-
+#
 # for epoch in range(basic_epoch):
 #     optim = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-3)
 #     train_loss, train_acc = train_model(model, train_iter, mode='plain')
@@ -109,6 +109,7 @@ loss_fn = F.cross_entropy
 # torch.save(model.state_dict(), '../basic_model.pt')
 #
 # 2. load the saved model to Prox_model, which is an instance of LSTMClassifier
+print("Loading saved model")
 Prox_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
 Prox_model.load_state_dict(torch.load('/home/t/stash/Coursework/Spring_22/512/Lab/3/Advesarial-Sequence-Classification/basic_model.pt'))
 
