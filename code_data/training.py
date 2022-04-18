@@ -16,7 +16,7 @@ hidden_size = 50  # LSTM output size of each time step
 input_size = 12
 basic_epoch = 1
 Adv_epoch = 50
-Prox_epoch = 1
+Prox_epoch = 50
 
 """
 # epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
@@ -25,10 +25,10 @@ Maximum prox accuracy achieved with epsilon  0.5  of  88.03%
 Maximum adv accuracy achieved with epsilon  5  of  92.30%
 """
 
-prox_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
-adv_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
-# prox_epsilons = [0.5, 0.01, 0.1, 1.0]
-# adv_epsilons = [5, 0.01, 0.1, 1.0]
+# prox_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
+# adv_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
+prox_epsilons = [0.1, 0.01, 1.0]
+adv_epsilons = [10, 0.01, 0.1, 1.0]
 
 def clip_gradient(model, clip_value):
     params = list(filter(lambda p: p.grad is not None, model.parameters()))
@@ -144,10 +144,10 @@ plot_accuracies(basic_train_loss, basic_val_loss, "Basic Model")
 # ''' Save and Load model'''
 
 # # 1. Save the trained model from the basic LSTM
-torch.save(model.state_dict(), '../basic_model.pt')
+# torch.save(model.state_dict(), '../basic_model.pt')
 
 Prox_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
-torch.save(Prox_model.state_dict(), "../prox_model.pt")
+# torch.save(Prox_model.state_dict(), "../prox_model.pt")
 
 # 2. load the saved model to Prox_model, which is an instance of LSTMClassifier
 # print("Loading saved model")
@@ -155,7 +155,7 @@ torch.save(Prox_model.state_dict(), "../prox_model.pt")
 
 
 Adv_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
-torch.save(Adv_model.state_dict(), "../adv_model.pt")
+# torch.save(Adv_model.state_dict(), "../adv_model.pt")
 # 3. load the saved model to Adv_model, which is an instance of LSTMClassifier
 # Adv_model.load_state_dict(torch.load('../basic_model.pt'))
 
