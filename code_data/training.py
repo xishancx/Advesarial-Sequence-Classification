@@ -4,11 +4,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from Classifier import LSTMClassifier
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-# Hyperparameters, feel free to tune
-
+from utils import *
 
 batch_size = 27
 output_size = 9   # number of class
@@ -18,44 +14,15 @@ basic_epoch = 1
 Adv_epoch = 50
 Prox_epoch = 50
 
-"""
 # epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
-Selecting optimal epsilon based on test accuracy (Grid-Search)
-Maximum prox accuracy achieved with epsilon  0.5  of  88.03%
-Maximum adv accuracy achieved with epsilon  5  of  92.30%
-"""
-
 # prox_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
 # adv_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
+# Selecting optimal epsilon based on test accuracy (Grid-Search)
+# Maximum prox accuracy achieved with epsilon  0.5  of  88.03%
+# Maximum adv accuracy achieved with epsilon  5  of  92.30%
+
 prox_epsilons = [0.1, 0.01, 1.0]
 adv_epsilons = [10, 0.01, 0.1, 1.0]
-
-def clip_gradient(model, clip_value):
-    params = list(filter(lambda p: p.grad is not None, model.parameters()))
-    for p in params:
-        p.grad.data.clamp_(-clip_value, clip_value)
-
-def plot_accuracies(train_acc, val_acc, model_name):
-    plt.plot(train_acc, 'g', label='Training Accuracy')
-    plt.plot(val_acc, 'b', label='Validation Accuracy')
-    plt.title('Training and Validation Accuracy for ' + model_name)
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.show()
-
-def plot_eps_accuracies(epsilons, accuracies, model_name):
-    plt.plot()
-    plt.plot(accuracies[0], 'y', label="Epsilon: " + str(epsilons[0]))
-
-    for eps, acc in zip(epsilons[1:], accuracies[1:]):
-        plt.plot(acc, 'b', label="Epsilon: " + str(eps))
-
-    plt.title('Testing Accuracy for ' + model_name)
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.show()
 
 # Training model
 def train_model(model, train_iter, mode, epsilon=1.0):
@@ -152,7 +119,6 @@ Prox_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
 # 2. load the saved model to Prox_model, which is an instance of LSTMClassifier
 # print("Loading saved model")
 # Prox_model.load_state_dict(torch.load('../basic_model.pt'))
-
 
 Adv_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
 # torch.save(Adv_model.state_dict(), "../adv_model.pt")
