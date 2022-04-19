@@ -23,7 +23,7 @@ class ProxLSTMCell(ag.Function):
         :param prox_epsilon: epsilon hyperparameter for proximal mapping
         :return: a tuple of hidden state and cell output after proximal mapping
         """
-
+      
         mul = torch.matmul(G_t, G_t.T)
         one_eye = torch.eye(mul.shape[-1])
         one_eye = one_eye.reshape((one_eye.shape[0], one_eye.shape[0]))
@@ -49,6 +49,7 @@ class ProxLSTMCell(ag.Function):
 
         h_t, c_t, G_t, inv = ctx.saved_tensors
         a = (grad_c.T @ inv).T
+
 
         grad_g1 = torch.matmul(a, c_t.T)
         grad_g2 = torch.matmul(c_t, a.T)
