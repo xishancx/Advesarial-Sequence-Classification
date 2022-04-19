@@ -10,19 +10,19 @@ batch_size = 27
 output_size = 9   # number of class
 hidden_size = 50  # LSTM output size of each time step
 input_size = 12
-basic_epoch = 1
-Adv_epoch = 50
-Prox_epoch = 50
+basic_epoch = 2
+Adv_epoch = 2
+Prox_epoch = 2
 
 # epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
-# prox_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
-# adv_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
+prox_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
+adv_epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5, 10]
 # Selecting optimal epsilon based on test accuracy (Grid-Search)
 # Maximum prox accuracy achieved with epsilon  0.5  of  88.03%
 # Maximum adv accuracy achieved with epsilon  5  of  92.30%
 
-prox_epsilons = [0.1, 0.01, 1.0]
-adv_epsilons = [10, 0.01, 0.1, 1.0]
+# prox_epsilons = [0.1, 0.01, 1.0]
+# adv_epsilons = [10, 0.01, 0.1, 1.0]
 
 # Training model
 def train_model(model, train_iter, mode, epsilon=1.0):
@@ -86,7 +86,7 @@ def compute_perturbation(loss, model):
 
 train_iter, test_iter = load_data.load_data('JV_data.mat', batch_size)
 #
-model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
+model = LSTMClassifier(output_size, hidden_size, input_size)
 loss_fn = F.cross_entropy
 
 basic_train_loss = []
@@ -108,19 +108,11 @@ plot_accuracies(basic_train_loss, basic_val_loss, "Basic Model")
 # ''' Save and Load model'''
 
 # # 1. Save the trained model from the basic LSTM
-# torch.save(model.state_dict(), '../basic_model.pt')
+torch.save(model.state_dict(), '../basic_model.pt')
 
-Prox_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
-# torch.save(Prox_model.state_dict(), "../prox_model.pt")
 
-# 2. load the saved model to Prox_model, which is an instance of LSTMClassifier
-# print("Loading saved model")
-# Prox_model.load_state_dict(torch.load('../basic_model.pt'))
-
-Adv_model = LSTMClassifier(batch_size, output_size, hidden_size, input_size)
-# torch.save(Adv_model.state_dict(), "../adv_model.pt")
-# 3. load the saved model to Adv_model, which is an instance of LSTMClassifier
-# Adv_model.load_state_dict(torch.load('../basic_model.pt'))
+Prox_model = LSTMClassifier(output_size, hidden_size, input_size)
+Adv_model = LSTMClassifier(output_size, hidden_size, input_size)
 
 max_prox_acc = 0
 max_prox_eps = -1
@@ -128,7 +120,8 @@ max_prox_eps = -1
 # ''' Training Prox_model'''
 prox_accuracies = []
 for epsilon in prox_epsilons:
-    Prox_model.load_state_dict(torch.load("../prox_model.pt"))
+    # 2. load the saved model to Prox_model, which is an instance of LSTMClassifier
+    Prox_model.load_state_dict(torch.load('../basic_model.pt'))
     prox_train_loss = []
     prox_val_loss = []
     for epoch in range(Prox_epoch):
@@ -157,7 +150,8 @@ max_adv_eps = -1
 adv_accuracies = []
 ''' Training Adv_model'''
 for epsilon in adv_epsilons:
-    Adv_model.load_state_dict(torch.load("../adv_model.pt"))
+    # 3. load the saved model to Adv_model, which is an instance of LSTMClassifier
+    Adv_model.load_state_dict(torch.load('../basic_model.pt'))
     adv_train_acc = []
     adv_val_acc = []
     for epoch in range(Adv_epoch):
