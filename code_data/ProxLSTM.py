@@ -57,4 +57,4 @@ class ProxLSTMCell(ag.Function):
         grad_g = -torch.matmul(grad_g1 + grad_g2, G_t)
         grad_s = (grad_c.T @ inv).T
 
-        return grad_h, grad_s, grad_g
+        return grad_h, grad_s, grad_g, None

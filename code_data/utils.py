@@ -19,9 +19,6 @@ def plot_accuracies(train_acc, val_acc, model_name):
 
 
 def plot_eps_accuracies(epsilons, accuracies, model_name):
-    plt.plot()
-    # plt.plot(accuracies[0], c=epsilons, label="Epsilon: " + str(epsilons[0]))
-
     for eps, acc, c in zip(epsilons, accuracies, colors.BASE_COLORS):
         plt.plot(acc, c=c, label="Epsilon: " + str(eps))
 

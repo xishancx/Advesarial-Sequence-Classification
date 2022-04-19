@@ -85,7 +85,7 @@ class LSTMClassifier(nn.Module):
 			out = self.conv(out)
 			out = self.b_norm(out)
 			out = self.relu(out)
-			self.v = torch.tensor(torch.permute(out, (2, 0, 1)), requires_grad=True)  # save the input to the lstm layer
+			self.v = torch.tensor(out.permute((2, 0, 1)), requires_grad=True)  # save the input to the lstm layer
 			out = self.v + epsilon * r  # perturb the input to lstm layer
 			h_t, c_t = torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size)
 			for i in range(out.size(0)):  # loop through L
