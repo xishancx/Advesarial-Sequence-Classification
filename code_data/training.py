@@ -43,9 +43,6 @@ def train_model(model, train_iter, mode, epsilon=1.0):
             perturb_prediction = model(input, r=compute_perturbation(loss, model),
                                        batch_size=input.size()[0], epsilon=epsilon, mode=mode)
             loss = loss + loss_fn(perturb_prediction, target)
-        # if mode == 'ProxLSTM':
-        #     model(input, r=compute_perturbation(loss, model),
-        #           batch_size=input.size()[0], epsilon=epsilon, mode=mode)
         num_corrects = (torch.max(prediction, 1)[1].view(target.size()).data == target.data).float().sum()
         acc = 100.0 * num_corrects/(input.size()[0])
         loss.backward()
