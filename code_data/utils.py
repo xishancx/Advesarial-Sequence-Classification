@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib import colors
 
 
 def clip_gradient(model, clip_value):
@@ -21,8 +22,8 @@ def plot_eps_accuracies(epsilons, accuracies, model_name):
     plt.plot()
     # plt.plot(accuracies[0], c=epsilons, label="Epsilon: " + str(epsilons[0]))
 
-    for eps, acc in zip(epsilons, accuracies):
-        plt.plot(acc, c=eps, label="Epsilon: " + str(eps))
+    for eps, acc, c in zip(epsilons, accuracies, colors.BASE_COLORS):
+        plt.plot(acc, c=c, label="Epsilon: " + str(eps))
 
     plt.title('Testing Accuracy for ' + model_name)
     plt.xlabel('Epochs')
