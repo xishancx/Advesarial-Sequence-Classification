@@ -18,7 +18,7 @@ class LSTMClassifier(nn.Module):
 
 		:param output_size: the number of classes, determines the size of the output tensor
 		:param hidden_size: the number of features in the hidden state of the LSTM
-		:param input_size: the
+		:param input_size: the input size of the
 		"""
 
 		super(LSTMClassifier, self).__init__()
@@ -85,8 +85,8 @@ class LSTMClassifier(nn.Module):
 			out = self.conv(out)
 			out = self.b_norm(out)
 			out = self.relu(out)
-			v = torch.tensor(torch.permute(out, (2, 0, 1)), requires_grad=True)  # save the input to the lstm layer
-			out = v + epsilon * r  # perturb the input to lstm layer
+			self.v = torch.tensor(torch.permute(out, (2, 0, 1)), requires_grad=True)  # save the input to the lstm layer
+			out = self.v + epsilon * r  # perturb the input to lstm layer
 			h_t, c_t = torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size)
 			for i in range(out.size(0)):  # loop through L
 				h_t, c_t = self.lstm(out[i], (h_t, c_t))
@@ -103,11 +103,11 @@ class LSTMClassifier(nn.Module):
 			out = self.dropout(out)
 
 			with torch.enable_grad():
-				v = out.requires_grad_(True)
-				h_t = torch.zeros(v.shape[1], self.hidden_size)  # h_0
-				s_t = torch.zeros(v.shape[1], self.hidden_size)  # s_0
+				self.v = out.requires_grad_(True)
+				h_t = torch.zeros(self.v.shape[1], self.hidden_size)  # h_0
+				s_t = torch.zeros(self.v.shape[1], self.hidden_size)  # s_0
 
-				for v_t in v:
+				for v_t in self.v:
 					h_t, s_t = self.lstm(v_t, (h_t, s_t))
 					G_t = ag.grad(s_t, v_t, grad_outputs=torch.ones_like(s_t), create_graph=True, retain_graph=True)[0]
 					h_t, c_t = prox(h_t, s_t, G_t, epsilon)

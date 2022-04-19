@@ -19,10 +19,10 @@ def plot_accuracies(train_acc, val_acc, model_name):
 
 def plot_eps_accuracies(epsilons, accuracies, model_name):
     plt.plot()
-    plt.plot(accuracies[0], 'y', label="Epsilon: " + str(epsilons[0]))
+    # plt.plot(accuracies[0], c=epsilons, label="Epsilon: " + str(epsilons[0]))
 
-    for eps, acc in zip(epsilons[1:], accuracies[1:]):
-        plt.plot(acc, 'b', label="Epsilon: " + str(eps))
+    for eps, acc in zip(epsilons, accuracies):
+        plt.plot(acc, c=eps, label="Epsilon: " + str(eps))
 
     plt.title('Testing Accuracy for ' + model_name)
     plt.xlabel('Epochs')
